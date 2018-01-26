@@ -7,9 +7,10 @@ Format: {event_name}\t{chrom}\t{strand}\t{bayes}\t{diff}\t{isoforms}
 
 import argparse
 from collections import defaultdict
-import splicing_event
+import splicing_event as process_miso
 import pdb
 
+HEADER = "#event_name\tchrom\tstrand\tbayes\tdiff\tsample1_posterior_mean\tsample2_posterior_mean"
 
 def parse_gene_lookup(filename):
     """
@@ -35,7 +36,7 @@ def load_miso_bf(miso_bf_file_name):
     with open(miso_bf_file_name, 'r') as miso_bf_file:
         for line in miso_bf_file:
             if header:
-                splicing_event = splicing_event.MisoEvent(line, header)
+                splicing_event = process_miso.MisoEvent(line, header)
                 if not splicing_event.name() in miso_events:
                     miso_events[splicing_event.name()] = splicing_event
                 else:
@@ -59,20 +60,22 @@ def add_gene_names(ss_to_gene, event_dict):
     return event_dict
 
 
-def filter_event_dictionary(event_dict, outfile_name, cutoff):
+def filter_event_dictionary(event_dict, outfile_name, cutoff_bayes):
     """If miso compare object passes the filter then print it"""
     with open(outfile_name, 'w') as outfile:
+        outfile.write("{header}\n".format(header=HEADER))
         for splicing_event in event_dict.values():
-            if splicing_event.passes_bayes_filter() and splicing_event.has_negative_diff():
+            if splicing_event.passes_bayes_filter(cutoff_bayes) and splicing_event.has_negative_diff():
                 outfile.write("{m}\n".format(m=str(splicing_event)))
             else:
                 pass
     return None
 
 
-def print_event_dict(event_dict, outfile_name, ):
+def print_event_dict(event_dict, outfile_name):
     """If miso compare object passes the filter then print it"""
     with open(outfile_name, 'w') as outfile:
+        outfile.write("{header}\n".format(header=HEADER))
         for splicing_event in event_dict.values():
             outfile.write("{m}\n".format(m=str(splicing_event)))
     return None
@@ -88,14 +91,17 @@ def main():
                         help="output file")
     args = parser.parse_args()
 
-    cutoff = 100.0
+    cutoff_bayes = 100.0
     # pdb.set_trace()
     gene_lookup_table = parse_gene_lookup(args.gene_infile)
     event_dict = load_miso_bf(args.compare_miso)
     event_dict_with_gene = add_gene_names(gene_lookup_table, event_dict)
 
     print_event_dict(event_dict_with_gene, args.outfile)
-    # filter_event_dictionary(event_dict_with_gene, args.outfile, cutoff)
+
+    filter_event_dictionary(event_dict_with_gene,
+                            args.outfile.replace('.miso_bf', '_b' + str(cutoff_bayes) + '.miso_bf'), 
+                            cutoff_bayes)
 
 
 if __name__ == '__main__':

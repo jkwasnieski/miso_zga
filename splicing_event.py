@@ -33,13 +33,14 @@ class MisoEvent(object):
 
     def __str__(self):
         """ Return Miso Compare object as a string """
-        summary = "{event_name}\t{chrom}\t{strand}\t{bayes}\t{diff}\t{isoforms}".format(
+        summary = "{event_name}\t{chrom}\t{strand}\t{bayes}\t{diff}\t{sample1_posterior_mean}\t{sample2_posterior_mean}".format(
             event_name=self._name,
             chrom=self._chrom,
             strand=self._strand,
             bayes=str(self._bayes),
             diff=str(self._diff),
-            isoforms="\t".join(self._isoforms))
+            sample1_posterior_mean = self._posterior_mean[0], 
+            sample2_posterior_mean = self._posterior_mean[1])
         return summary + "\t{g}".format(g=self._gene) if self._gene else summary
 
     def passes_bayes_filter(self, cutoff=100.0):
